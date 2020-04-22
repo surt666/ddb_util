@@ -87,10 +87,11 @@ pub async fn get_item<'a, T: Deserialize<'a> + Default>(client: &DynamoDbClient,
 /// #     Ok(())
 /// # }
 /// ```
-pub async fn query<'a, T: Deserialize<'a>>(client: &DynamoDbClient, table: &str, index_name: Option<String>, key_cond_exp: Option<String>, exp_attr_vals: Option<DdbMap>) -> Vec<T> {    
+pub async fn query<'a, T: Deserialize<'a>>(client: &DynamoDbClient, table: &str, index_name: Option<String>, key_cond_exp: Option<String>, exp_attr_vals: Option<DdbMap>, exp_attr_names: Option<HashMap<String, String>>) -> Vec<T> {    
     let query_input = QueryInput {
         key_condition_expression: key_cond_exp,
         expression_attribute_values: exp_attr_vals,
+	expression_attribute_names: exp_attr_names,
         table_name: table.to_string(),
         index_name: index_name,
         ..Default::default()
@@ -128,7 +129,7 @@ mod tests {
 	let mut exp_attr: DdbMap = HashMap::new();
 	set_kv(&mut exp_attr, ":itemtype".to_string(), "dataset".to_string());
 	let client = DynamoDbClient::new(Region::EuWest1);
-	let _x: Vec<Dataset> = query(&client, "relations", Some("".to_string()), Some("itemtype = :itemtype".to_string()), Some(exp_attr)).await;
+	let _x: Vec<Dataset> = query(&client, "relations", Some("".to_string()), Some("itemtype = :itemtype".to_string()), Some(exp_attr), None).await;
 	Ok(())
     }
     
