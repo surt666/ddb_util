@@ -1,8 +1,6 @@
 //use rusoto_core::{RusotoError};
-use rusoto_dynamodb::{
-    AttributeValue, DynamoDb, DynamoDbClient, GetItemInput, QueryInput,
-};
-use serde::{Deserialize};
+use rusoto_dynamodb::{AttributeValue, DynamoDb, DynamoDbClient, GetItemInput, QueryInput};
+use serde::Deserialize;
 use std::collections::HashMap;
 
 pub type DdbMap = HashMap<String, AttributeValue>;
@@ -48,17 +46,15 @@ pub fn set_kv(
 /// #     Ok(())
 /// # }
 /// ```
-pub async fn get_item<'a, T: Deserialize<'a> + Default>(client: &DynamoDbClient, table: &str, key: DdbMap) -> T {
+pub async fn get_item<'a, T: Deserialize<'a> + Default>(
+    client: &DynamoDbClient, table: &str, key: DdbMap,
+) -> T {
     let get_item_input = GetItemInput {
         key: key,
         table_name: table.to_string(),
         ..Default::default()
     };
-    let res = client.get_item(get_item_input)
-	.await
-	.unwrap()
-	.item
-	.unwrap();
+    let res = client.get_item(get_item_input).await.unwrap().item.unwrap();
     serde_dynamodb::from_hashmap(res).unwrap()
 }
 
@@ -87,11 +83,14 @@ pub async fn get_item<'a, T: Deserialize<'a> + Default>(client: &DynamoDbClient,
 /// #     Ok(())
 /// # }
 /// ```
-pub async fn query<'a, T: Deserialize<'a>>(client: &DynamoDbClient, table: &str, index_name: Option<String>, key_cond_exp: Option<String>, exp_attr_vals: Option<DdbMap>, exp_attr_names: Option<HashMap<String, String>>) -> Vec<T> {    
+pub async fn query<'a, T: Deserialize<'a>>(
+    client: &DynamoDbClient, table: &str, index_name: Option<String>, key_cond_exp: Option<String>,
+    exp_attr_vals: Option<DdbMap>, exp_attr_names: Option<HashMap<String, String>>,
+) -> Vec<T> {
     let query_input = QueryInput {
         key_condition_expression: key_cond_exp,
         expression_attribute_values: exp_attr_vals,
-	expression_attribute_names: exp_attr_names,
+        expression_attribute_names: exp_attr_names,
         table_name: table.to_string(),
         index_name: index_name,
         ..Default::default()
@@ -103,39 +102,51 @@ pub async fn query<'a, T: Deserialize<'a>>(client: &DynamoDbClient, table: &str,
         .items
         .unwrap_or_else(|| vec![])
         .into_iter()
-        .map(|item| serde_dynamodb::from_hashmap(item).unwrap())
+        .map(|item| {
+	     println!("{:#?}", item);
+	    serde_dynamodb::from_hashmap(item).unwrap()})
         .collect();
-        items
+    items
 }
-
 
 #[cfg(test)]
 mod tests {
-    use rusoto_core::{Region};
-    use rusoto_dynamodb::{DynamoDbClient};
-    use serde::{Deserialize};
     use crate::*;
+    use rusoto_core::Region;
+    use rusoto_dynamodb::DynamoDbClient;
+    use serde::Deserialize;
 
     #[derive(Debug, Deserialize)]
     struct Dataset {
-	pk: String,
-	sk: String,
-	itemtype: String,
-	created: Option<u64>,
+        pk: String,
+        sk: String,
+        itemtype: String,
+        created: Option<u64>,
     }
-    
+
     #[tokio::test]
     async fn try_ddb_util_main() -> Result<(), String> {
-	let mut exp_attr: DdbMap = HashMap::new();
-	set_kv(&mut exp_attr, ":itemtype".to_string(), "dataset".to_string());
-	let client = DynamoDbClient::new(Region::EuWest1);
-	let _x: Vec<Dataset> = query(&client, "relations", Some("".to_string()), Some("itemtype = :itemtype".to_string()), Some(exp_attr), None).await;
-	Ok(())
+        let mut exp_attr: DdbMap = HashMap::new();
+        set_kv(
+            &mut exp_attr,
+            ":itemtype".to_string(),
+            "dataset".to_string(),
+        );
+        let client = DynamoDbClient::new(Region::EuWest1);
+        let _x: Vec<Dataset> = query(
+            &client,
+            "relations",
+            Some("".to_string()),
+            Some("itemtype = :itemtype".to_string()),
+            Some(exp_attr),
+            None,
+        )
+        .await;
+        Ok(())
     }
-    
+
     #[test]
     fn it_works() {
         assert_eq!(2 + 2, 4);
     }
 }
-
