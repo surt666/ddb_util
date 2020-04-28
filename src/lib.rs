@@ -1,7 +1,8 @@
 //use rusoto_core::{RusotoError};
-use rusoto_dynamodb::{AttributeValue, DynamoDb, DynamoDbClient, GetItemInput, QueryInput};
+use rusoto_dynamodb::{AttributeValue, DynamoDb, DynamoDbClient, GetItemInput, QueryInput, PutItemInput, BatchWriteItemInput, WriteRequest, PutRequest, DeleteRequest};
 use serde::Deserialize;
 use std::collections::HashMap;
+use itertools::Itertools;
 
 pub type DdbMap = HashMap<String, AttributeValue>;
 
@@ -107,6 +108,45 @@ pub async fn query<'a, T: Deserialize<'a>>(
 	    serde_dynamodb::from_hashmap(item).unwrap()})
         .collect();
     items
+}
+
+pub async fn put_item(client: &DynamoDbClient, table: &str, item: DdbMap) -> String {
+    let input = PutItemInput {
+	table_name: table.to_string(),
+	item: item,
+	..Default::default()
+    };
+    let res = client.put_item(input).await.unwrap();
+    println!("{:#?}", res);
+    "OK".to_string()
+}
+
+fn create_write_request(write_items: Vec<DdbMap>, delete_items: Vec<DdbMap>) -> Vec<WriteRequest> {
+    let mut dwr: Vec<WriteRequest> = delete_items
+	.into_iter()
+	.map(|x| WriteRequest {delete_request: Some(DeleteRequest {key: x}), put_request: None, })
+	.collect();
+    let pwr: Vec<WriteRequest> = write_items
+	.into_iter()
+	.map(|x| WriteRequest {delete_request: None, put_request: Some(PutRequest {item: x}), })	
+	.collect();
+    dwr.extend(pwr);
+    dwr
+}
+
+pub async fn batch_write_items(client: &DynamoDbClient, table: &str, write_items: Vec<DdbMap>, delete_items: Vec<DdbMap>) -> String {
+    let v = create_write_request(write_items, delete_items);    
+    for chunk in &v.into_iter().chunks(25) {
+	let c = chunk.collect();
+	let mut m = HashMap::new();
+	m.insert(table.to_string(), c);
+	let input = BatchWriteItemInput {
+	    request_items: m,
+	    ..Default::default()
+	};
+	let _res = client.batch_write_item(input);
+    }
+    "OK".to_string()
 }
 
 #[cfg(test)]
