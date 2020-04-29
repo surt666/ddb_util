@@ -2,7 +2,7 @@
 use itertools::Itertools;
 use rusoto_dynamodb::{
     AttributeValue, BatchWriteItemInput, DeleteRequest, DynamoDb, DynamoDbClient, GetItemInput,
-    PutItemInput, PutItemOutput, PutRequest, QueryInput, WriteRequest,
+    PutItemInput, PutItemOutput, PutRequest, QueryInput, WriteRequest, 
 };
 use serde::Deserialize;
 use std::collections::HashMap;
@@ -146,7 +146,8 @@ fn create_write_request(write_items: Vec<DdbMap>, delete_items: Vec<DdbMap>) -> 
 
 pub async fn batch_write_items(
     client: &DynamoDbClient, table: &str, write_items: Vec<DdbMap>, delete_items: Vec<DdbMap>,
-) -> String {
+) -> Vec<WriteRequest> {
+    let mut vector: Vec<WriteRequest> = Vec::new();
     let v = create_write_request(write_items, delete_items);
     for chunk in &v.into_iter().chunks(25) {
         let c: Vec<WriteRequest> = chunk.collect();
@@ -156,9 +157,14 @@ pub async fn batch_write_items(
             request_items: m,
             ..Default::default()
         };
-        let _res = client.batch_write_item(input);
+        let res = client.batch_write_item(input).await.unwrap();
+	match res.unprocessed_items {
+	    Some(m) => vector.extend(m.get(table).unwrap().clone()),
+	    None => (),
+	}
+	println!("{:#?}", vector);
     }
-    "OK".to_string()
+    vector
 }
 
 #[cfg(test)]
