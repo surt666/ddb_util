@@ -2,7 +2,7 @@
 use itertools::Itertools;
 use rusoto_dynamodb::{
     AttributeValue, BatchWriteItemInput, DeleteRequest, DynamoDb, DynamoDbClient, GetItemInput,
-    PutItemInput, PutRequest, QueryInput, WriteRequest,
+    PutItemInput, PutItemOutput, PutRequest, QueryInput, WriteRequest,
 };
 use serde::Deserialize;
 use std::collections::HashMap;
@@ -96,7 +96,7 @@ pub async fn query<'a, T: Deserialize<'a>>(
         expression_attribute_values: exp_attr_vals,
         expression_attribute_names: exp_attr_names,
         table_name: table.to_string(),
-        index_name: index_name,
+        index_name,
         ..Default::default()
     };
     let items: Vec<T> = client
@@ -114,15 +114,15 @@ pub async fn query<'a, T: Deserialize<'a>>(
     items
 }
 
-pub async fn put_item(client: &DynamoDbClient, table: &str, item: DdbMap) -> String {
+pub async fn put_item(client: &DynamoDbClient, table: &str, item: DdbMap) -> PutItemOutput {
     let input = PutItemInput {
         table_name: table.to_string(),
-        item: item,
+        item,
         ..Default::default()
     };
     let res = client.put_item(input).await.unwrap();
     println!("{:#?}", res);
-    "OK".to_string()
+    res
 }
 
 fn create_write_request(write_items: Vec<DdbMap>, delete_items: Vec<DdbMap>) -> Vec<WriteRequest> {
@@ -150,7 +150,7 @@ pub async fn batch_write_items(
     let v = create_write_request(write_items, delete_items);
     for chunk in &v.into_iter().chunks(25) {
         let c: Vec<WriteRequest> = chunk.collect();
-        let mut m = HashMap::new();
+        let mut m = HashMap::new(); 
         m.insert(table.to_string(), c);
         let input = BatchWriteItemInput {
             request_items: m,
