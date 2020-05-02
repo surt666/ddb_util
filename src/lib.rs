@@ -159,7 +159,7 @@ pub async fn batch_write_items(
         };
         let res = client.batch_write_item(input).await.unwrap();
 	match res.unprocessed_items {
-	    Some(m) => vector.extend(m.get(table).unwrap().clone()),
+	    Some(m) => {println!("{:#?}", m.get(table)); vector.extend(m.get(table).unwrap().clone())},
 	    None => (),
 	}
 	println!("BWI {:#?}", vector);
