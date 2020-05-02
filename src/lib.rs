@@ -162,7 +162,7 @@ pub async fn batch_write_items(
 	    Some(m) => vector.extend(m.get(table).unwrap().clone()),
 	    None => (),
 	}
-	println!("{:#?}", vector);
+	println!("BWI {:#?}", vector);
     }
     vector
 }
