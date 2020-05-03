@@ -125,27 +125,38 @@ pub async fn put_item(client: &DynamoDbClient, table: &str, item: DdbMap) -> Put
     res
 }
 
-fn create_write_request(write_items: Vec<DdbMap>, delete_items: Vec<DdbMap>) -> Vec<WriteRequest> {
-    let mut dwr: Vec<WriteRequest> = delete_items
-        .into_iter()
-        .map(|x| WriteRequest {
-            delete_request: Some(DeleteRequest { key: x }),
-            put_request: None,
-        })
-        .collect();
-    let pwr: Vec<WriteRequest> = write_items
-        .into_iter()
-        .map(|x| WriteRequest {
-            delete_request: None,
-            put_request: Some(PutRequest { item: x }),
-        })
-        .collect();
-    dwr.extend(pwr);
+fn create_write_request(write_items: Option<Vec<DdbMap>>, delete_items: Option<Vec<DdbMap>>) -> Vec<WriteRequest> {
+    let mut dwr: Vec<WriteRequest>;
+    match delete_items {
+	Some(di) => {
+	    dwr = di
+		.into_iter()
+		.map(|x| WriteRequest {
+		    delete_request: Some(DeleteRequest { key: x }),
+		    put_request: None,
+		})
+		.collect();
+	},
+	None => dwr = vec![],
+    }
+    match write_items {
+	Some(wi) => {
+	    let pwr: Vec<WriteRequest> = wi
+		.into_iter()
+		.map(|x| WriteRequest {
+		    delete_request: None,
+		    put_request: Some(PutRequest { item: x }),
+		})
+		.collect();
+	    dwr.extend(pwr);
+	},
+	None => (),
+    }
     dwr
 }
 
 pub async fn batch_write_items(
-    client: &DynamoDbClient, table: &str, write_items: Vec<DdbMap>, delete_items: Vec<DdbMap>,
+    client: &DynamoDbClient, table: &str, write_items: Option<Vec<DdbMap>>, delete_items: Option<Vec<DdbMap>>,
 ) -> Vec<WriteRequest> {
     let mut vector: Vec<WriteRequest> = Vec::new();
     let v = create_write_request(write_items, delete_items);
