@@ -2,7 +2,7 @@
 use itertools::Itertools;
 use rusoto_dynamodb::{
     AttributeValue, BatchWriteItemInput, DeleteRequest, DynamoDb, DynamoDbClient, GetItemInput,
-    PutItemInput, PutItemOutput, PutRequest, QueryInput, WriteRequest, 
+    PutItemInput, PutItemOutput, PutRequest, QueryInput, WriteRequest,
 };
 use serde::Deserialize;
 use std::collections::HashMap;
@@ -125,58 +125,61 @@ pub async fn put_item(client: &DynamoDbClient, table: &str, item: DdbMap) -> Put
     res
 }
 
-fn create_write_request(write_items: Option<Vec<DdbMap>>, delete_items: Option<Vec<DdbMap>>) -> Vec<WriteRequest> {
+fn create_write_request(
+    write_items: Option<Vec<DdbMap>>, delete_items: Option<Vec<DdbMap>>,
+) -> Vec<WriteRequest> {
     let mut dwr: Vec<WriteRequest>;
     match delete_items {
-	Some(di) => {
-	    dwr = di
-		.into_iter()
-		.map(|x| WriteRequest {
-		    delete_request: Some(DeleteRequest { key: x }),
-		    put_request: None,
-		})
-		.collect();
-	},
-	None => dwr = vec![],
+        Some(di) => {
+            dwr = di
+                .into_iter()
+                .map(|x| WriteRequest {
+                    delete_request: Some(DeleteRequest { key: x }),
+                    put_request: None,
+                })
+                .collect();
+        }
+        None => dwr = vec![],
     }
     match write_items {
-	Some(wi) => {
-	    let pwr: Vec<WriteRequest> = wi
-		.into_iter()
-		.map(|x| WriteRequest {
-		    delete_request: None,
-		    put_request: Some(PutRequest { item: x }),
-		})
-		.collect();
-	    dwr.extend(pwr);
-	},
-	None => (),
+        Some(wi) => {
+            let pwr: Vec<WriteRequest> = wi
+                .into_iter()
+                .map(|x| WriteRequest {
+                    delete_request: None,
+                    put_request: Some(PutRequest { item: x }),
+                })
+                .collect();
+            dwr.extend(pwr);
+        }
+        None => (),
     }
     dwr
 }
 
 pub async fn batch_write_items(
-    client: &DynamoDbClient, table: &str, write_items: Option<Vec<DdbMap>>, delete_items: Option<Vec<DdbMap>>,
+    client: &DynamoDbClient, table: &str, write_items: Option<Vec<DdbMap>>,
+    delete_items: Option<Vec<DdbMap>>,
 ) -> Vec<WriteRequest> {
     let mut vector: Vec<WriteRequest> = Vec::new();
     let v = create_write_request(write_items, delete_items);
     for chunk in &v.into_iter().chunks(25) {
         let c: Vec<WriteRequest> = chunk.collect();
-        let mut m = HashMap::new(); 
+        let mut m = HashMap::new();
         m.insert(table.to_string(), c);
         let input = BatchWriteItemInput {
             request_items: m,
             ..Default::default()
         };
         let res = client.batch_write_item(input).await.unwrap();
-	match res.unprocessed_items {
-	    Some(m) => match m.get(table) {
-		Some(e) => vector.extend(e.clone()),
-		None => (),
-	    },
-	    None => (),
-	}
-	println!("BWI {:#?}", vector);
+        match res.unprocessed_items {
+            Some(m) => match m.get(table) {
+                Some(e) => vector.extend(e.clone()),
+                None => (),
+            },
+            None => (),
+        }
+        println!("BWI {:#?}", vector);
     }
     vector
 }
