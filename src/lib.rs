@@ -89,12 +89,13 @@ pub async fn get_item<'a, T: Deserialize<'a> + Default>(
 /// ```
 pub async fn query<'a, T: Deserialize<'a>>(
     client: &DynamoDbClient, table: &str, index_name: Option<String>, key_cond_exp: Option<String>,
-    exp_attr_vals: Option<DdbMap>, exp_attr_names: Option<HashMap<String, String>>,
+    exp_attr_vals: Option<DdbMap>, exp_attr_names: Option<HashMap<String, String>>, projection_exp: Option<String>
 ) -> Vec<T> {
     let query_input = QueryInput {
         key_condition_expression: key_cond_exp,
         expression_attribute_values: exp_attr_vals,
         expression_attribute_names: exp_attr_names,
+        projection_expression: projection_exp,
         table_name: table.to_string(),
         index_name,
         ..Default::default()
