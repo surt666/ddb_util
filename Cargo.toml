@@ -13,7 +13,7 @@ serde_derive = "^1"
 serde_dynamodb = "0.6.0"
 log = "^0.4"
 simple_logger = "1.6.0"
-openssl = { version = "^0.10", features = ["vendored"] }
+#openssl = { version = "^0.10", features = ["vendored"] }
 rusoto_core = {version = "0.45.0"}
 rusoto_dynamodb = {version = "0.45.0", features=["serialize_structs", "deserialize_structs"]}
 tokio = { version = "0.2", features = ["full"] }
