@@ -14,7 +14,7 @@ serde_dynamodb = "0.6.0"
 log = "^0.4"
 simple_logger = "1.6.0"
 #openssl = { version = "^0.10", features = ["vendored"] }
-rusoto_core = {version = "^0.45.0", features=["rustls"]}
-rusoto_dynamodb = {version = "^0.45.0", features=["serialize_structs", "deserialize_structs", "rustls"]}
+rusoto_core = {version = "^0.45.0", default_features = false, features=["rustls"]}
+rusoto_dynamodb = {version = "^0.45.0", default_features = false, features=["serialize_structs", "deserialize_structs", "rustls"]}
 tokio = { version = "0.2", features = ["full"] }
 itertools = "0.9.0"
