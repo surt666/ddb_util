@@ -109,7 +109,6 @@ pub async fn query<'a, T: Deserialize<'a>>(
         .unwrap_or_else(|| vec![])
         .into_iter()
         .map(|item| {
-            println!("{:#?}", item);
             serde_dynamodb::from_hashmap(item).unwrap()
         })
         .collect();
@@ -123,7 +122,6 @@ pub async fn put_item(client: &DynamoDbClient, table: &str, item: DdbMap) -> Put
         ..Default::default()
     };
     let res = client.put_item(input).await.unwrap();
-    println!("{:#?}", res);
     res
 }
 
@@ -181,7 +179,6 @@ pub async fn batch_write_items(
             },
             None => (),
         }
-        println!("BWI {:#?}", vector);
     }
     vector
 }
