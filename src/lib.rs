@@ -54,7 +54,7 @@ pub async fn get_item<'a, T: Deserialize<'a> + Default>(
     client: &DynamoDbClient, table: &str, key: DdbMap,
 ) -> T {
     let get_item_input = GetItemInput {
-        key: key,
+        key,
         table_name: table.to_string(),
         ..Default::default()
     };
