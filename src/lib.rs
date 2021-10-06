@@ -13,9 +13,9 @@ pub fn set_kv(
     item: &mut HashMap<String, AttributeValue>, key: String, val: String,
 ) -> &HashMap<String, AttributeValue> {
     item.insert(
-        key.to_string(),
+        key,
         AttributeValue {
-            s: Some(val.to_string()),
+            s: Some(val),
             ..Default::default()
         },
     );
@@ -129,30 +129,26 @@ fn create_write_request(
     write_items: Option<Vec<DdbMap>>, delete_items: Option<Vec<DdbMap>>,
 ) -> Vec<WriteRequest> {
     let mut dwr: Vec<WriteRequest>;
-    match delete_items {
-        Some(di) => {
-            dwr = di
-                .into_iter()
-                .map(|x| WriteRequest {
-                    delete_request: Some(DeleteRequest { key: x }),
-                    put_request: None,
-                })
-                .collect();
-        }
-        None => dwr = vec![],
+    if let Some(di) = delete_items {
+        dwr = di
+            .into_iter()
+            .map(|x| WriteRequest {
+                delete_request: Some(DeleteRequest { key: x }),
+                put_request: None,
+            })
+            .collect();
+    } else {
+        dwr = vec![]
     }
-    match write_items {
-        Some(wi) => {
-            let pwr: Vec<WriteRequest> = wi
-                .into_iter()
-                .map(|x| WriteRequest {
-                    delete_request: None,
-                    put_request: Some(PutRequest { item: x }),
-                })
-                .collect();
-            dwr.extend(pwr);
-        }
-        None => (),
+    if let Some(wi) = write_items {
+        let pwr: Vec<WriteRequest> = wi
+            .into_iter()
+            .map(|x| WriteRequest {
+                delete_request: None,
+                put_request: Some(PutRequest { item: x }),
+            })
+            .collect();
+        dwr.extend(pwr);
     }
     dwr
 }
@@ -172,12 +168,10 @@ pub async fn batch_write_items(
             ..Default::default()
         };
         let res = client.batch_write_item(input).await.unwrap();
-        match res.unprocessed_items {
-            Some(m) => match m.get(table) {
-                Some(e) => vector.extend(e.clone()),
-                None => (),
-            },
-            None => (),
+        if let Some(m) = res.unprocessed_items {
+            if let Some(e) = m.get(table) {
+                vector.extend(e.clone())
+            }
         }
     }
     vector
@@ -219,10 +213,5 @@ mod tests {
         )
         .await;
         Ok(())
-    }
-
-    #[test]
-    fn it_works() {
-        assert_eq!(2 + 2, 4);
     }
 }
